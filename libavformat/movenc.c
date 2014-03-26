@@ -1427,7 +1427,8 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, track, st);
-    if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS || track->cluster[0].dts)
+     if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS || track->cluster[0].dts
+         || track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)
         mov_write_edts_tag(pb, track);  // PSP Movies require edts box
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
