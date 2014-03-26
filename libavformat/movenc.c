@@ -1119,6 +1119,8 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
             descr = "SoundHandler";
         } else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             if (track->tag == MKTAG('t','x','3','g')) hdlr_type = "sbtl";
+            else if (track->tag == MKTAG('c','7','0','8')) hdlr_type = "clcp";
+            else if (track->tag == MKTAG('c','6','0','8')) hdlr_type = "clcp";
             else                                      hdlr_type = "text";
             descr = "SubtitleHandler";
         } else if (track->enc->codec_tag == MKTAG('r','t','p',' ')) {
@@ -1168,7 +1170,9 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
     else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         mov_write_smhd_tag(pb);
     else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        if (track->tag == MKTAG('t','e','x','t')) mov_write_gmhd_tag(pb);
+        if (track->tag == MKTAG('t','e','x','t') ||
+            track->tag == MKTAG('c','7','0','8') ||
+            track->tag == MKTAG('c','6','0','8')) mov_write_gmhd_tag(pb);
         else                                      mov_write_nmhd_tag(pb);
     } else if (track->tag == MKTAG('r','t','p',' ')) {
         mov_write_hmhd_tag(pb);
