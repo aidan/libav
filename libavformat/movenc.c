@@ -1311,6 +1311,8 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
     descr     = "DataHandler";
 
     if (track) {
+      av_log(NULL, AV_LOG_WARNING,
+             "AIDAN: mov_write_hdlr_tag - has track\n");
         hdlr = (track->mode == MODE_MOV) ? "mhlr" : "\0\0\0\0";
         if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             hdlr_type = "vide";
@@ -1343,7 +1345,11 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
                    "Unknown hldr_type for %s / 0x%04X, writing dummy values\n",
                    tag_buf, track->enc->codec_tag);
         }
-    }
+    } else {
+      av_log(NULL, AV_LOG_WARNING,
+             "AIDAN: mov_write_hdlr_tag - no track\n");
+      hdlr_type = "alis";
+    }    
 
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "hdlr");
