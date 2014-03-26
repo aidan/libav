@@ -1297,6 +1297,10 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
 
     int64_t pos = avio_tell(pb);
 
+    if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+         width = 1888;
+    }
+
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "tapt");
 
@@ -1312,6 +1316,12 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, track->enc->width << 16);
     avio_wb32(pb, track->enc->height << 16);
 
+    avio_wb32(pb, 20);
+    ffio_wfourcc(pb, "prof");
+    avio_wb32(pb, 0);
+    avio_wb32(pb, width << 16);
+    avio_wb32(pb, track->enc->height << 16);
+    
     return updateSize(pb, pos);
 }
 
@@ -1426,11 +1436,16 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
         mov_write_uuid_tag_psp(pb,track);  // PSP Movies require this uuid box
     if (track->tag == MKTAG('r','t','p',' '))
         mov_write_udta_sdp(pb, track->rtp_ctx, track->trackID);
-    if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO && track->mode == MODE_MOV) {
+    /* MILES FIXME should check for 608/708 instead of subtitle? */
+    if ((track->enc->codec_type == AVMEDIA_TYPE_VIDEO ||
+         track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)
+        && track->mode == MODE_MOV) {
         double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
-        if (0.0 != sample_aspect_ratio && 1.0 != sample_aspect_ratio)
+        if ((0.0 != sample_aspect_ratio && 1.0 != sample_aspect_ratio) ||
+            track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             mov_write_tapt_tag(pb, track);
-    };
+        }
+    }
     return updateSize(pb, pos);
 }
 
