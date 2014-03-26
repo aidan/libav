@@ -1674,9 +1674,15 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, track, st);
     if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS ||
-        (track->entry && track->cluster[0].dts)) {
-        if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
+        (track->entry && track->cluster[0].dts) || track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+        if (!(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
+             av_log(NULL, AV_LOG_WARNING,
+                    "AIDAN: mov_write_trak_tag, does have mov->flags && FRAGMENT\n");
             mov_write_edts_tag(pb, track);  // PSP Movies require edts box
+        } else {
+             av_log(NULL, AV_LOG_WARNING,
+                    "AIDAN: mov_write_trak_tag, does not have mov->flags && FRAGMENT\n");
+        }
     }
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
