@@ -885,8 +885,9 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
                            "the file may be unplayable!\n");
                 }
             }
-        } else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)
+        } else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             tag = ff_codec_get_tag(ff_codec_movsubtitle_tags, track->enc->codec_id);
+        }
     }
 
     return tag;
@@ -931,6 +932,7 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
     else
         tag = mov_get_codec_tag(s, track);
 
+    av_log(track->enc, AV_LOG_WARNING, "AIDAN found tag for code %d\n", track->enc->codec_id);
     return tag;
 }
 
@@ -1218,6 +1220,8 @@ static int mov_write_dref_tag(AVIOContext *pb)
 static int mov_write_stbl_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
+    av_log(NULL, AV_LOG_WARNING,
+           "AIDAN: mov_write_stbl_tag\n");
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "stbl");
     mov_write_stsd_tag(pb, track);
@@ -1240,6 +1244,8 @@ static int mov_write_stbl_tag(AVIOContext *pb, MOVTrack *track)
 static int mov_write_dinf_tag(AVIOContext *pb)
 {
     int64_t pos = avio_tell(pb);
+    av_log(NULL, AV_LOG_WARNING,
+           "AIDAN: mov_write_dinf_tag\n");
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "dinf");
     mov_write_dref_tag(pb);
@@ -1248,6 +1254,8 @@ static int mov_write_dinf_tag(AVIOContext *pb)
 
 static int mov_write_nmhd_tag(AVIOContext *pb)
 {
+    av_log(NULL, AV_LOG_WARNING,
+           "AIDAN: mov_write_nmhd_tag\n");
     avio_wb32(pb, 12);
     ffio_wfourcc(pb, "nmhd");
     avio_wb32(pb, 0);
@@ -1256,6 +1264,8 @@ static int mov_write_nmhd_tag(AVIOContext *pb)
 
 static int mov_write_gmhd_tag(AVIOContext *pb)
 {
+    av_log(NULL, AV_LOG_WARNING,
+           "AIDAN: mov_write_gmhd_tag\n");
     avio_wb32(pb, 0x20);   /* size */
     ffio_wfourcc(pb, "gmhd");
     avio_wb32(pb, 0x18);   /* gmin size */
@@ -1294,6 +1304,8 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
     const char *hdlr, *descr = NULL, *hdlr_type = NULL;
     int64_t pos = avio_tell(pb);
 
+    av_log(NULL, AV_LOG_WARNING,
+           "AIDAN: mov_write_hdlr_tag\n");
     hdlr      = "dhlr";
     hdlr_type = "url ";
     descr     = "DataHandler";
@@ -1367,6 +1379,8 @@ static int mov_write_hmhd_tag(AVIOContext *pb)
 static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
+    av_log(NULL, AV_LOG_WARNING,
+           "AIDAN: mov_write_minf_tag\n");
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "minf");
     if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO)
@@ -1392,6 +1406,8 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
 static int mov_write_mdhd_tag(AVIOContext *pb, MOVTrack *track)
 {
     int version = track->track_duration < INT32_MAX ? 0 : 1;
+    av_log(NULL, AV_LOG_WARNING,
+           "AIDAN: mov_write_mdhd_tag\n");
 
     if (track->mode == MODE_ISM)
         version = 1;
@@ -1428,6 +1444,8 @@ static int mov_write_mdhd_tag(AVIOContext *pb, MOVTrack *track)
 static int mov_write_mdia_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
+    av_log(NULL, AV_LOG_WARNING,
+           "AIDAN: mov_write_mdia_tag\n");
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "mdia");
     mov_write_mdhd_tag(pb, track);
@@ -1634,6 +1652,8 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track, AVStream *st)
 {
     int64_t pos = avio_tell(pb);
+    av_log(NULL, AV_LOG_WARNING,
+           "AIDAN: mov_write_trak_tag\n");
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, track, st);
