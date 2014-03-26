@@ -1538,6 +1538,10 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
 
     int64_t pos = avio_tell(pb);
 
+    if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+         width = 1888;
+    }
+
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "tapt");
 
@@ -1553,6 +1557,12 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, track->enc->width << 16);
     avio_wb32(pb, track->enc->height << 16);
 
+    avio_wb32(pb, 20);
+    ffio_wfourcc(pb, "prof");
+    avio_wb32(pb, 0);
+    avio_wb32(pb, width << 16);
+    avio_wb32(pb, track->enc->height << 16);
+    
     return update_size(pb, pos);
 }
 
@@ -1675,10 +1685,27 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_uuid_tag_psp(pb, track); // PSP Movies require this uuid box
     if (track->tag == MKTAG('r','t','p',' '))
         mov_write_udta_sdp(pb, track);
-    if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO && track->mode == MODE_MOV) {
+    if ((track->enc->codec_type == AVMEDIA_TYPE_VIDEO ||
+         track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)
+        && track->mode == MODE_MOV) {
         double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
-        if (0.0 != sample_aspect_ratio && 1.0 != sample_aspect_ratio)
+        av_log(NULL, AV_LOG_WARNING,
+               "AIDAN: mov_write_trak_tag - AVMEDIA_TYPE_VIDEO && MODE_MOV, ratio is %f\n",
+               sample_aspect_ratio);
+        if ((0.0 != sample_aspect_ratio && 1.0 != sample_aspect_ratio) ||
+            track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             mov_write_tapt_tag(pb, track);
+        }
+    } else {
+      if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
+        av_log(NULL, AV_LOG_WARNING,
+               "AIDAN: mov_write_trak_tag - AVMEDIA_TYPE_VIDEO\n");
+      }
+      if (track->mode == MODE_MOV) {
+        av_log(NULL, AV_LOG_WARNING,
+               "AIDAN: mov_write_trak_tag - MODE_MOV\n");
+      }
+
     }
     return update_size(pb, pos);
 }
