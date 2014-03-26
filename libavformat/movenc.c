@@ -1308,7 +1308,13 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
             descr     = "SoundHandler";
         } else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             if (track->tag == MKTAG('t','x','3','g')) hdlr_type = "sbtl";
-            else                                      hdlr_type = "text";
+            else if (track->tag == MKTAG('c','l','c','p')) hdlr_type = "clcp";
+            else                                      hdlr_type = "clcp";
+            av_log(track->enc, AV_LOG_WARNING,
+                   "AIDAN: tag is %d, clcp tag is %d,  hdlr_type is %s\n",
+                   track->tag,
+                   MKTAG('c', 'l', 'c', 'p'),
+                   hdlr_type);
             descr = "SubtitleHandler";
         } else if (track->enc->codec_tag == MKTAG('r','t','p',' ')) {
             hdlr_type = "hint";
@@ -1368,8 +1374,9 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
     else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         mov_write_smhd_tag(pb);
     else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        if (track->tag == MKTAG('t','e','x','t')) mov_write_gmhd_tag(pb);
-        else                                      mov_write_nmhd_tag(pb);
+        if (track->tag == MKTAG('t','e','x','t') ||
+            track->tag == MKTAG('c','l','c','p')) mov_write_gmhd_tag(pb);
+        else                                      mov_write_gmhd_tag(pb);
     } else if (track->tag == MKTAG('r','t','p',' ')) {
         mov_write_hmhd_tag(pb);
     } else if (track->tag == MKTAG('t','m','c','d')) {
