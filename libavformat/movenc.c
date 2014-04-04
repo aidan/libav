@@ -1020,7 +1020,7 @@ static int mov_write_dref_tag(AVIOContext *pb)
     avio_wb32(pb, 1); /* entry count */
 
     avio_wb32(pb, 0xc); /* size */
-    ffio_wfourcc(pb, "url ");
+    ffio_wfourcc(pb, "alis");
     avio_wb32(pb, 1); /* version & flags */
 
     return 28;
@@ -1113,8 +1113,7 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
 
     if (!track) { /* no media --> data handler */
         hdlr = "dhlr";
-        hdlr_type = "url ";
-        hdlr_type = "alis"; /* AIDAN This should determine if we're a CC stream or not instead of just setting it*/
+        hdlr_type = "alis";
         descr = "DataHandler";
     } else {
         hdlr = (track->mode == MODE_MOV) ? "mhlr" : "\0\0\0\0";
