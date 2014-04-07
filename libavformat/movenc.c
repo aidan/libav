@@ -1020,7 +1020,7 @@ static int mov_write_dref_tag(AVIOContext *pb)
     avio_wb32(pb, 1); /* entry count */
 
     avio_wb32(pb, 0xc); /* size */
-    ffio_wfourcc(pb, "url ");
+    ffio_wfourcc(pb, "alis");
     avio_wb32(pb, 1); /* version & flags */
 
     return 28;
@@ -1100,6 +1100,12 @@ static int mov_write_vmhd_tag(AVIOContext *pb)
     return 0x14;
 }
 
+static int is_clcp_track(MOVTrack *track)
+{
+    return (track->tag == MKTAG('c','7','0','8'))
+        || (track->tag == MKTAG('c','6','0','8'));
+}
+
 static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
 {
     const char *hdlr, *descr = NULL, *hdlr_type = NULL;
@@ -1107,8 +1113,7 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
 
     if (!track) { /* no media --> data handler */
         hdlr = "dhlr";
-        hdlr_type = "url ";
-        hdlr_type = "alis"; /* AIDAN This should determine if we're a CC stream or not instead of just setting it*/
+        hdlr_type = "alis";
         descr = "DataHandler";
     } else {
         hdlr = (track->mode == MODE_MOV) ? "mhlr" : "\0\0\0\0";
@@ -1120,15 +1125,14 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
             descr = "SoundHandler";
         } else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             if (track->tag == MKTAG('t','x','3','g')) hdlr_type = "sbtl";
-            else if (track->tag == MKTAG('c','7','0','8')) hdlr_type = "clcp";
-            else if (track->tag == MKTAG('c','6','0','8')) hdlr_type = "clcp";
+            else if (is_clcp_track(track))            hdlr_type = "clcp";
             else                                      hdlr_type = "text";
             descr = "SubtitleHandler";
         } else if (track->enc->codec_tag == MKTAG('r','t','p',' ')) {
             hdlr_type = "hint";
             descr = "HintHandler";
         }
-    }    
+    }
 
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "hdlr");
@@ -1171,9 +1175,8 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
     else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         mov_write_smhd_tag(pb);
     else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        if (track->tag == MKTAG('t','e','x','t') ||
-            track->tag == MKTAG('c','7','0','8') ||
-            track->tag == MKTAG('c','6','0','8')) mov_write_gmhd_tag(pb);
+        if (track->tag == MKTAG('t','e','x','t') || is_clcp_track(track))
+                                                  mov_write_gmhd_tag(pb);
         else                                      mov_write_nmhd_tag(pb);
     } else if (track->tag == MKTAG('r','t','p',' ')) {
         mov_write_hmhd_tag(pb);
@@ -1321,7 +1324,7 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, 0);
     avio_wb32(pb, width << 16);
     avio_wb32(pb, track->enc->height << 16);
-    
+
     return updateSize(pb, pos);
 }
 
@@ -1427,8 +1430,8 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, track, st);
-     if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS || track->cluster[0].dts
-         || track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)
+     if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS
+             || track->cluster[0].dts || is_clcp_track(track))
         mov_write_edts_tag(pb, track);  // PSP Movies require edts box
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
@@ -1437,13 +1440,11 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
         mov_write_uuid_tag_psp(pb,track);  // PSP Movies require this uuid box
     if (track->tag == MKTAG('r','t','p',' '))
         mov_write_udta_sdp(pb, track->rtp_ctx, track->trackID);
-    /* MILES FIXME should check for 608/708 instead of subtitle? */
-    if ((track->enc->codec_type == AVMEDIA_TYPE_VIDEO ||
-         track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)
+    if ((track->enc->codec_type == AVMEDIA_TYPE_VIDEO || is_clcp_track(track))
         && track->mode == MODE_MOV) {
         double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
         if ((0.0 != sample_aspect_ratio && 1.0 != sample_aspect_ratio) ||
-            track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            is_clcp_track(track)) {
             mov_write_tapt_tag(pb, track);
         }
     }
