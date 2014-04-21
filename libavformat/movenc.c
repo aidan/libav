@@ -1323,6 +1323,8 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
                 hdlr_type = "sbtl";
             } else if (track->tag == MKTAG('m','p','4','s')) {
                 hdlr_type = "subp";
+            } else if (is_clcp_track(track)) { 
+                hdlr_type = "clcp";
             } else {
                 hdlr_type = "text";
             }
@@ -1385,7 +1387,8 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
     else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         mov_write_smhd_tag(pb);
     else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        if (track->tag == MKTAG('t','e','x','t')) mov_write_gmhd_tag(pb);
+        if (track->tag == MKTAG('t','e','x','t') || is_clcp_track(track))
+                                                  mov_write_gmhd_tag(pb);
         else                                      mov_write_nmhd_tag(pb);
     } else if (track->tag == MKTAG('r','t','p',' ')) {
         mov_write_hmhd_tag(pb);
@@ -1648,7 +1651,8 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, track, st);
     if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS ||
-        (track->entry && track->cluster[0].dts)) {
+        (track->entry && track->cluster[0].dts) ||
+        is_clcp_track(track)) {
         if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
             mov_write_edts_tag(pb, track);  // PSP Movies require edts box
     }
@@ -1659,10 +1663,13 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_uuid_tag_psp(pb, track); // PSP Movies require this uuid box
     if (track->tag == MKTAG('r','t','p',' '))
         mov_write_udta_sdp(pb, track);
-    if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO && track->mode == MODE_MOV) {
+    if ((track->enc->codec_type == AVMEDIA_TYPE_VIDEO || is_clcp_track(track))
+        && track->mode == MODE_MOV) {
         double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
-        if (0.0 != sample_aspect_ratio && 1.0 != sample_aspect_ratio)
+        if ((0.0 != sample_aspect_ratio && 1.0 != sample_aspect_ratio) ||
+            is_clcp_track(track)) {
             mov_write_tapt_tag(pb, track);
+        }
     }
     return update_size(pb, pos);
 }
