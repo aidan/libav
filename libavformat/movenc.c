@@ -1215,7 +1215,7 @@ static int mov_write_dref_tag(AVIOContext *pb)
     avio_wb32(pb, 1); /* entry count */
 
     avio_wb32(pb, 0xc); /* size */
-    ffio_wfourcc(pb, "url ");
+    ffio_wfourcc(pb, "alis");
     avio_wb32(pb, 1); /* version & flags */
 
     return 28;
@@ -1308,6 +1308,7 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
 
     hdlr      = "dhlr";
     hdlr_type = "url ";
+    hdlr_type = "alis"; /* AIDAN This should determine if we're a CC stream or not instead of just setting it*/
     descr     = "DataHandler";
 
     if (track) {
@@ -1526,6 +1527,10 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
                                track->enc->sample_aspect_ratio.den);
 
     int64_t pos = avio_tell(pb);
+
+    if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+         width = 1888;
+    }
 
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "tapt");
